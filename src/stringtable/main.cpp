@@ -12,8 +12,6 @@ using namespace wil;
 
 constexpr const TCHAR* wiki = L"https://github.com/hereafter/string-table/wiki";
 
-
-
 void replaceAll(wstring& str, const wstring& from, const wstring& to);
 void usage();
 
@@ -73,12 +71,13 @@ int _tmain(int argc, TCHAR** argv)
 	{
 		cout << lines << " strings extracted." << endl;
 	}
+
 	return 0;
 }
 
 void usage()
 {
-	cout << "Export string table to csv in a dll." << endl;
+	cout << "Export string table to csv from dlls." << endl;
 	cout << endl << "STRINGTABLE [drive:][path][filename]" << endl;
 	cout << endl << "  [drive:][path][filename]" << endl;
 	cout << "  \tSpecifies drive, directory and file name to a dll file" << endl;
