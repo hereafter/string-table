@@ -6,16 +6,47 @@
 #include <atlstr.h>
 #include <windows.h>
 #include <wil/resource.h>
+#include <tlhelp32.h>
+#include <Psapi.h>
+#include <algorithm>
+#include <conio.h>
 
 using namespace std;
 using namespace wil;
 
 constexpr const TCHAR* wiki = L"https://github.com/hereafter/string-table/wiki";
 
+bool is_launched_from_shell();
 void replaceAll(wstring& str, const wstring& from, const wstring& to);
 void usage();
 
-int _tmain(int argc, TCHAR** argv)
+int execute(int argc, const TCHAR** argv);
+
+int _tmain(int argc, const TCHAR** argv)
+{
+	auto noshell = is_launched_from_shell();
+	if (noshell)
+	{
+		SetConsoleTitle(L"StringTable");
+	}
+
+	auto code = execute(argc, argv);
+
+	if (noshell)
+	{
+		ShellExecute(nullptr, L"open", wiki, nullptr, nullptr, SW_SHOW);
+		cout << endl;
+		cout << "Press any key to continue..." << endl;
+		while (_kbhit() == 0)
+		{
+			Sleep(100);
+		}
+	}
+	return code;
+	
+}
+
+int execute(int argc, const TCHAR** argv)
 {
 	if (argc <= 1)
 	{
@@ -23,8 +54,8 @@ int _tmain(int argc, TCHAR** argv)
 		return -1;
 	}
 
-    wstring dllPath = argv[1];
-    unique_hmodule hm{ ::LoadLibraryEx(dllPath.c_str(), nullptr, LOAD_LIBRARY_AS_IMAGE_RESOURCE)};
+	wstring dllPath = argv[1];
+	unique_hmodule hm{ ::LoadLibraryEx(dllPath.c_str(), nullptr, LOAD_LIBRARY_AS_IMAGE_RESOURCE) };
 	if (hm == nullptr)
 	{
 		cout << "Unable to open " << (CW2A(dllPath.c_str(), CP_UTF8).m_psz) << endl;
@@ -43,12 +74,12 @@ int _tmain(int argc, TCHAR** argv)
 		cout << "Unable to write to " << (CW2A(szCsvPath, CP_UTF8).m_psz) << endl;
 		return -1;
 	}
-	
+
 	int lines = 0;
 	for (int i = 0; i < INT16_MAX; i++)
 	{
 		TCHAR szBuffer[MAX_PATH] = { 0 };
-		auto count=::LoadString(hm.get(), i, szBuffer, MAX_PATH);
+		auto count = ::LoadString(hm.get(), i, szBuffer, MAX_PATH);
 		if (count <= 0) continue;
 
 		wstring value = szBuffer;
@@ -94,3 +125,42 @@ void replaceAll(wstring& str, const wstring& from, const wstring& to)
 	}
 }
 
+bool is_launched_from_shell()
+{
+	using namespace wil;
+
+	DWORD ppid = 0;
+	auto pid = ::GetCurrentProcessId();
+	unique_handle snapshot{ CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
+
+	PROCESSENTRY32 pe{ 0 };
+	pe.dwSize = sizeof(pe);
+
+	auto success = Process32First(snapshot.get(), &pe);
+	if (!success) return false;
+	do
+	{
+		if (pid == pe.th32ProcessID)
+		{
+			ppid = pe.th32ParentProcessID;
+			break;
+		}
+	} while (Process32Next(snapshot.get(), &pe));
+
+	if (ppid == 0) return false;
+
+	unique_process_handle h{ ::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, ppid) };
+	TCHAR szFilePath[MAX_PATH] = { 0 };
+	DWORD filePathSize = MAX_PATH;
+	::QueryFullProcessImageName(h.get(), 0, szFilePath, &filePathSize);
+
+	auto fileName = ::PathFindFileName(szFilePath);
+	TCHAR szFileName[MAX_PATH] = { 0 };
+	StrCpy(szFileName, fileName);
+	PathRemoveExtension(szFileName);
+	wstring fn = szFileName;
+	transform(fn.begin(), fn.end(), fn.begin(), ::towlower);
+
+	if (fn == L"explorer" || fn == L"dllhost" || fn == L"sihost") return true;
+	return false;
+}
