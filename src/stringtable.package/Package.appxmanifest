@@ -10,13 +10,13 @@
   IgnorableNamespaces="uap uap3 uap5 desktop rescap">
 
   <Identity
-    Name="f4445748-1dc1-4891-9e5f-dc8484b2a398"
-    Publisher="CN=hereafter"
+    Name="25510Hereafter2.StringTable"
+    Publisher="CN=61AA0D33-CF4F-46A5-93A4-EE3200B3B4BD"
     Version="1.0.0.0" />
 
   <Properties>
     <DisplayName>ms-resource:AppDisplayName</DisplayName>
-    <PublisherDisplayName>hereafter</PublisherDisplayName>
+    <PublisherDisplayName>Hereafter2</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
   </Properties>
 
